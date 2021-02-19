@@ -1,6 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
-// import PropTypes from 'prop-types';
+import PropTypes from 'prop-types';
 import InputForm from './InputForm';
 
 const StyledHeader = styled.header`
@@ -34,7 +34,9 @@ const Header = ({ today, addItem, clearAll }) => (
 );
 
 Header.propTypes = {
-
+	today: PropTypes.string,
+	addItem: PropTypes.func,
+	clearAll: PropTypes.func,
 };
 
 export default Header;

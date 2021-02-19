@@ -57,8 +57,6 @@ const Main = ({ items, removeItem, clearDay }) => {
   return (
     <StyledMain>
       <MainContainer>
-        {/* <InputForm today={today} addItem={addItem} /> */}
-
         <TimeTable>
           {items.map(day => (
             <DayItem key={day.name}>
@@ -89,10 +87,9 @@ const Main = ({ items, removeItem, clearDay }) => {
 };
 
 Main.propTypes = {
-  // today: PropTypes.string,
-  items: PropTypes.array,
-  // addItem: PropTypes.func,
-  removeItem: PropTypes.func,
+	items: PropTypes.array,
+	removeItem: PropTypes.func,
+	clearDay: PropTypes.func,
 };
 
 export default Main;

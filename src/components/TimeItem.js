@@ -2,6 +2,7 @@ import React from 'react';
 import styled from 'styled-components';
 import PropTypes from 'prop-types';
 import { rem } from 'polished';
+import { formatTime, formatTimeString } from '../util/time';
 
 const RemoveItem = styled.button`
   position: absolute;
@@ -56,14 +57,15 @@ const ItemTime = styled.span`
 `;
 
 const TimeItem = ({ item, day, removeItem }) => {
+	const timeFormat = formatTime(item.time);
   const handleRemove = () => {
     removeItem({ day, info: item });
-  };
+	};
 
   return (
     <StyledItem>
-      <ItemTime>{item.time.hours}H {item.time.minutes}M</ItemTime>
-      <span>{item.start} - {item.stop}</span>
+      <ItemTime>{timeFormat.hours}H {timeFormat.minutes}M</ItemTime>
+      <span>{formatTimeString(item.start)} - {formatTimeString(item.stop)}</span>
       <span>{item.project}</span>
       <span>{item.description}</span>
 

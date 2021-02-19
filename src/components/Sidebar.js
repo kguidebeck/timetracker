@@ -1,7 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
+import PropTypes from 'prop-types';
 import { rem } from 'polished';
-// import PropTypes from 'prop-types';
+import { formatTime } from '../util/time';
 
 const StyledSidebar = styled.aside`
   position: absolute;
@@ -69,31 +70,39 @@ const Sidebar = ({ items }) => (
     <SidebarContainer>
       <SidebarHeader>Time Totals</SidebarHeader>
       <TimeTotals>
-        {items.map(day => (
-          <TimeDay key={day.name}>
-            <DayHeading>{day.name}{day.timeTotal && <span> | {day.timeTotal.hours}H {day.timeTotal.minutes}M</span>}</DayHeading>
-            {day.items.length > 0 &&
-              <TimeList>
-                {day.projects.map(proj => (
-                  <TimeItem key={proj.name}>
-                    <ItemProject>{proj.name}</ItemProject>
-                    <ItemTime>{proj.time.hours}H {proj.time.minutes}M</ItemTime>
-                  </TimeItem>
-                ))}
-              </TimeList>
-            }
-            {day.items.length === 0 &&
-              <EmptyItem>Currently no time added.</EmptyItem>
-            }
-          </TimeDay>
-        ))}
+        {items.map(day => {
+					const dayTotal = formatTime(day.timeTotal);
+
+					return (
+						<TimeDay key={day.name}>
+							<DayHeading>{day.name}<span> | {dayTotal.hours}H {dayTotal.minutes}M</span></DayHeading>
+							{day.items.length > 0 &&
+								<TimeList>
+									{day.projects.map(proj => {
+										const projTotal = formatTime(proj.time);
+
+										return (
+											<TimeItem key={proj.name}>
+												<ItemProject>{proj.name}</ItemProject>
+												<ItemTime>{projTotal.hours}H {projTotal.minutes}M</ItemTime>
+											</TimeItem>
+										);
+								})}
+								</TimeList>
+							}
+							{day.items.length === 0 &&
+								<EmptyItem>Currently no time added.</EmptyItem>
+							}
+						</TimeDay>
+					);
+				})}
       </TimeTotals>
     </SidebarContainer>
   </StyledSidebar>
 );
 
 Sidebar.propTypes = {
-
+	items: PropTypes.array,
 };
 
 export default Sidebar;

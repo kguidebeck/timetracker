@@ -1,7 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
-// import PropTypes from 'prop-types';
+import PropTypes from 'prop-types';
 import { rem } from 'polished';
+import { formatTime } from '../util/time';
 import Container from './Container';
 
 const StyledFooter = styled.footer`
@@ -35,17 +36,24 @@ const TimeInfo = styled.span`
   }
 `;
 
-const Footer = ({ weekTotal, day, dayTotal }) => (
-  <StyledFooter>
-    <Container>
-      <TimeInfo><span>{day}:</span> {dayTotal.hours}H {dayTotal.minutes}M</TimeInfo>
-      <TimeInfo><span>Week:</span> {weekTotal.hours}H {weekTotal.minutes}M</TimeInfo>
-    </Container>
-  </StyledFooter>
-);
+const Footer = ({ weekTotal, day, dayTotal }) => {
+	const weekFormat = formatTime(weekTotal);
+	const dayFormat = formatTime(dayTotal);
+	
+	return (
+		<StyledFooter>
+			<Container>
+				<TimeInfo><span>{day}:</span> {dayFormat.hours}H {dayFormat.minutes}M</TimeInfo>
+				<TimeInfo><span>Week:</span> {weekFormat.hours}H {weekFormat.minutes}M</TimeInfo>
+			</Container>
+		</StyledFooter>
+	);
+};
 
 Footer.propTypes = {
-
+	weekTotal: PropTypes.number,
+	day: PropTypes.string,
+	dayTotal: PropTypes.number,
 };
 
 export default Footer;

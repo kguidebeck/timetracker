@@ -3,7 +3,7 @@ import { ThemeProvider } from 'styled-components';
 import { format, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
 import GlobalStyle from './styles/global-style';
 import theme from './styles/theme';
-import { addTime, removeTime } from './util/time';
+import { compareTime } from './util/time';
 import Header from './components/Header';
 import Main from './components/Main';
 import Sidebar from './components/Sidebar';
@@ -16,7 +16,7 @@ const setUpState = () => {
   days.forEach((d, i) => {
     days[i] = {
       name: format(d, 'iiii'),
-	  	timeTotal: null,
+	  	timeTotal: 0,
 	  	projects: [],
       items: [],
     };
@@ -24,7 +24,7 @@ const setUpState = () => {
 
   const initalState = {
     today: format(now, 'iiii') === 'Sunday' ? 'Saturday' : format(now, 'iiii'),
-	timeTotal: null,
+		timeTotal: 0,
     days: [...days],
   }
 
@@ -32,8 +32,8 @@ const setUpState = () => {
 }
 
 function reducer(state, action) {
-  const { timeTotal, days } = state;
-  const { type, item } = action;
+	const { timeTotal, days } = state
+	const { type, item } = action;
 
   switch (type) {
     case 'setup': {
@@ -43,118 +43,134 @@ function reducer(state, action) {
         item.today = today;
       }
       return {...item};
-		} case 'checkTotal': {
-			let tempDays = days;
-			let tempTotal = { hours: 0, minutes: 0 };
-
-			tempDays.forEach(day => {
-				let dayTotal = { hours: 0, minutes: 0 };
-
-				day.items.forEach(item => {
-					dayTotal = addTime(dayTotal, item.time);
-				});
-
-				// day.timeTotal = {...dayTotal};
-
-				tempTotal = addTime(tempTotal, dayTotal);
-			});
-
-			console.log(...tempDays);
-
-			return {
-				...state,
-				timeTotal: {...tempTotal},
-				// days: {...tempDays}
-			}
 		} case 'add': {
-      const tempDays = days;
-      const day = tempDays.find(d => d.name === item.day);
-      if (day) day.items = [...day.items, {...item.info}];
+			const day = days.find(d => d.name === item.day);
+			const dayIndex = days.findIndex(d => d.name === item.day);
+			let tempDays = [...days];
+			let tempTimeTotal = timeTotal;
 
-      // Add project/time to projectTotals based on day
-      const project = day.projects.find(proj => proj.name === item.info.project);
-      if (project) {
-        project.time = addTime(project.time, item.info.time);
-      } else {
-        day.projects = [
-          ...day.projects,
-          {
-            name: item.info.project,
-            time: { ...item.info.time }
-          }
-        ];
-      }
+      if (day) {
+				const { project, time } = item.info;
 
-      // Update/add to day Total
-      if (day.timeTotal) {
-        day.timeTotal = addTime(day.timeTotal, item.info.time);
-      } else {
-        day.timeTotal = {...item.info.time};
-      }
+				// Add item to day + sort them by start time
+				const dayItems = [...day.items, {...item.info}];
+				dayItems.sort(compareTime);
 
-      // Update week total
-      let tempTimeTotal = timeTotal;
+      	// Add project/time to projectTotals based on day
+				const projectIndex = day.projects.findIndex(proj => proj.name === project);
+				const foundProject = day.projects.find(proj => proj.name === project);
+				let dayProjects = [...day.projects];
+				
+				if (foundProject) {
+					const tempProject = { ...foundProject, time: foundProject.time + time };
 
-      if (timeTotal) {
-        tempTimeTotal = addTime(timeTotal, item.info.time);
-      } else {
-        tempTimeTotal = {...item.info.time};
-      }
+					dayProjects[projectIndex] = {...tempProject};
+				} else {
+					dayProjects = [
+						...day.projects,
+						{
+							name: project,
+							time: time
+						}
+					];
+				}
+
+				// Update/add to day Total
+				const dayTimeTotal = day.timeTotal + time;
+
+				const tempDay = {
+					...day,
+					items: [...dayItems],
+					projects: [...dayProjects],
+					timeTotal: dayTimeTotal,
+				};
+
+				tempDays[dayIndex] = tempDay;
+
+
+				// Update week total
+				tempTimeTotal = timeTotal + time;
+			}
       
       return {
         ...state,
-        timeTotal: {...tempTimeTotal},
+        timeTotal: tempTimeTotal,
         days: [...tempDays],
       };
     } case 'remove': {
-      const tempDays = days;
-      const day = tempDays.find(d => d.name === item.day);
-      if (day) day.items = day.items.filter(i => i.id !== item.info.id);
+			const day = days.find(d => d.name === item.day);
+			const dayIndex = days.findIndex(d => d.name === item.day);
+			let tempDays = [...days];
+			let tempTimeTotal = timeTotal;
 
-      // Remove project/time to projectTotals based on day
-      const project = day.projects.find(proj => proj.name === item.info.project);
-      if (project) {
-        const projectIndex = day.projects.findIndex(proj => proj.name === item.info.project);
-        if (project.time.hours === item.info.time.hours && project.time.minutes === item.info.time.minutes) {
-          day.projects.splice(projectIndex, 1);
-        } else {
-          project.time = removeTime(project.time, item.info.time);
-        }
-      }
+      if (day) {
+				const { id, project, time } = item.info;
 
-      // Update to day Total
-      day.timeTotal = removeTime(day.timeTotal, item.info.time);
+				// Remove item from day
+				const dayItems = day.items.filter(i => i.id !== id);
 
-      // Update week total
-      let tempTimeTotal = timeTotal;
-      tempTimeTotal = removeTime(timeTotal, item.info.time);
+				// Add project/time to projectTotals based on day
+				const projectIndex = day.projects.findIndex(proj => proj.name === project);
+				const foundProject = day.projects.find(proj => proj.name === project);
+				let dayProjects = [...day.projects];
+				
+				if (foundProject) {
+					if (foundProject.time === time) {
+						dayProjects = day.projects.filter(proj => proj.name !== project);
+					} else {
+						const tempProject = { ...foundProject, time: foundProject.time - time };
+
+						dayProjects[projectIndex] = {...tempProject};
+					}
+				}	
+
+				// Update day Total
+				const dayTimeTotal = day.timeTotal - time;
+				
+				const tempDay = {
+					...day,
+					items: [...dayItems],
+					projects: [...dayProjects],
+					timeTotal: dayTimeTotal,
+				};
+
+				tempDays[dayIndex] = tempDay;
+
+				// Update week total
+				tempTimeTotal = timeTotal - time;
+			}
       
       return {
         ...state,
-        timeTotal: {...tempTimeTotal},
+        timeTotal: tempTimeTotal,
         days: [...tempDays],
       };
     } case 'clearDay': {
-			const tempDays = days;
-			const day = tempDays.find(d => d.name === item);
-
-			const dayTime = day.timeTotal;
+			const day = days.find(d => d.name === item);
+			const dayIndex = days.findIndex(d => d.name === item);
+			let tempDays = [...days];
+			let tempTimeTotal = timeTotal;
 
 			if (day) {
-				// let { timeTotal, projects, items } = day;
-				day.timeTotal = null;
-	  		day.projects = [];
-      	day.items = [];
+				tempTimeTotal = timeTotal - day.timeTotal;
+
+				const tempDay = {
+					...day,
+					timeTotal: 0,
+					projects: [],
+					items: [],
+				};
+
+				tempDays[dayIndex] = tempDay;
 			}
 
 			return {
         ...state,
-        // timeTotal: {...tempTimeTotal},
+        timeTotal: tempTimeTotal,
         days: [...tempDays],
       };
 		} case 'clearAll': {
 			const resetState = setUpState();
-			console.log(resetState);
       return {...resetState};
 		} default:
       throw new Error();
@@ -181,7 +197,6 @@ const App = () => {
 
 		if (localItems) {
 			dispatch({ type: 'setup', item: localItems });
-			dispatch({ type: 'checkTotal' });
 		}
 
   }, []);
@@ -201,9 +216,9 @@ const App = () => {
       />
       <Sidebar items={state.days} />
       <Footer
-        weekTotal={state.timeTotal || { hours: 0, minutes: 0 }}
+        weekTotal={state.timeTotal}
         day={state.today}
-        dayTotal={state.days.find(d => d.name === state.today).timeTotal || { hours: 0, minutes: 0 }}
+        dayTotal={state.days.find(d => d.name === state.today).timeTotal}
       />
       <GlobalStyle />
     </ThemeProvider>

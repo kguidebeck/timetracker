@@ -3,7 +3,7 @@ import styled, { css } from 'styled-components';
 import PropTypes from 'prop-types';
 import { rem } from 'polished';
 import generateID from '../util/generateID';
-import { generateTime, formatTime } from '../util/time';
+import { generateTime } from '../util/time';
 
 const StyledForm = styled.form`
   position: relative;
@@ -87,7 +87,7 @@ const InputForm = ({ today, addItem }) => {
 		setFormErrors('Please enter in a start time');
 	  } else if (!formValues.stop || formValues.stop === "") {
 		setFormErrors('Please enter in a stop time');
-	  } else if (!generateTime(formValues.start, formValues.stop)) {
+	  } else if (generateTime(formValues.start, formValues.stop) <= 0) {
 		setFormErrors('Please enter in a stop time later than the start time');
 	  } else if (!formValues.project) {
 		setFormErrors('Please enter in a project name');
@@ -100,19 +100,16 @@ const InputForm = ({ today, addItem }) => {
 	e.preventDefault();
 	
 	errorCheck();
-	console.log(formErrors)
 
 	if (formErrors !== null) return;
-
-	console.log(generateTime(formValues.start, formValues.stop));
 
     addItem({
       day: formValues.weekday,
       info: {
         id: generateID(),
         time: generateTime(formValues.start, formValues.stop),
-        start: formatTime(formValues.start),
-        stop: formatTime(formValues.stop),
+        start: formValues.start,
+        stop: formValues.stop,
         project: formValues.project,
         description: formValues.description,
       }
@@ -195,7 +192,8 @@ const InputForm = ({ today, addItem }) => {
 };
 
 InputForm.propTypes = {
-  items: PropTypes.array,
+	today: PropTypes.string,
+	addItem: PropTypes.func,
 };
 
 export default InputForm;
